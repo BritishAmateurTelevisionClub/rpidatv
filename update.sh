@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Updated by davecrump 201804010
+# Updated by davecrump 201805151
 
 DisplayUpdateMsg() {
 # Delete any old update message image  201802040
@@ -46,6 +46,12 @@ fi
 if [ -f "/home/pi/rpidatv/scripts/touchcal.txt" ]; then
   cp -f -r /home/pi/rpidatv/scripts/touchcal.txt /home/pi/touchcal.txt
 fi
+
+# Make a safe copy of rtl-fm_presets.txt if required
+cp -f -r /home/pi/rpidatv/scripts/rtl-fm_presets.txt /home/pi/rtl-fm_presets.txt
+
+# Make a safe copy of portsdown_locators.txt if required
+cp -f -r /home/pi/rpidatv/scripts/portsdown_locators.txt /home/pi/portsdown_locators.txt
 
 # Check if fbi (frame buffer imager) needs to be installed
 if [ ! -f "/usr/bin/fbi" ]; then
@@ -272,6 +278,35 @@ rm -f /home/pi/portsdown_config.txt
 rm -f /home/pi/portsdown_presets.txt
 rm -f /home/pi/rpidatv/scripts/copy_config.sh
 
+if ! grep -q modulation /home/pi/rpidatv/scripts/portsdown_config.txt; then
+  # File needs updating
+  printf "Adding new entries to user's portsdown_config.txt\n"
+  # Delete any blank lines
+  sed -i -e '/^$/d' /home/pi/rpidatv/scripts/portsdown_config.txt
+  # Add the 2 new entries and a new line 
+  echo "modulation=DVB-S" >> /home/pi/rpidatv/scripts/portsdown_config.txt
+  echo "limegain=90" >> /home/pi/rpidatv/scripts/portsdown_config.txt
+  echo "" >> /home/pi/rpidatv/scripts/portsdown_config.txt
+fi
+
+if ! grep -q d1limegain /home/pi/rpidatv/scripts/portsdown_presets.txt; then
+  # File needs updating
+  printf "Adding new entries to user's portsdown_presets.txt\n"
+  # Delete any blank lines
+  sed -i -e '/^$/d' /home/pi/rpidatv/scripts/portsdown_presets.txt
+  # Add the 9 new entries and a new line 
+  echo "d1limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "d2limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "d3limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "d4limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "d5limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "t1limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "t2limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "t3limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "t4limegain=90" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+  echo "" >> /home/pi/rpidatv/scripts/portsdown_presets.txt
+fi
+
 # Install Waveshare 3.5B DTOVERLAY if required (201704080)
 if [ ! -f /boot/overlays/waveshare35b.dtbo ]; then
   sudo cp /home/pi/rpidatv/scripts/waveshare35b.dtbo /boot/overlays/
@@ -344,8 +379,20 @@ if [ -f "/home/pi/touchcal.txt" ]; then
   cp -f -r /home/pi/touchcal.txt /home/pi/rpidatv/scripts/touchcal.txt
 fi
 
-DisplayUpdateMsg "Step 9 of 10\nInstalling FreqShow SW\n\nXXXXXXXXX-"
+# Restore the user's original rtl-fm_presets.txt if required
+if [ -f "/home/pi/rtl-fm_presets.txt" ]; then
+  cp -f -r /home/pi/rtl-fm_presets.txt /home/pi/rpidatv/scripts/rtl-fm_presets.txt
+fi
 
+# Restore the user's original portsdown_locators.txt if required
+if [ -f "/home/pi/portsdown_locators.txt" ]; then
+  cp -f -r /home/pi/portsdown_locators.txt /home/pi/rpidatv/scripts/portsdown_locators.txt
+else
+  # Over-write the default locator with the user's locator
+  source /home/pi/rpidatv/scripts/copy_locator.sh
+fi
+
+DisplayUpdateMsg "Step 9 of 10\nInstalling FreqShow SW\n\nXXXXXXXXX-"
 
 # Either install FreqShow, or downgrade sdl so that it works (20180101)
 if [ -f "/home/pi/FreqShow/LICENSE" ]; then
@@ -385,7 +432,7 @@ rm -rf /home/pi/prev_installed_version.txt
 
 DisplayUpdateMsg "Step 10 of 10\nRebooting\n\nXXXXXXXXXX"
 printf "\nRebooting\n"
-sleep 2
+sleep 1
 sudo reboot now
 
 exit
