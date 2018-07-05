@@ -125,9 +125,15 @@ cp bin/ts2es ../../bin/
 cd /opt/vc/src/hello_pi/
 sudo ./rebuild.sh
 
+# Compile H264 player
 cd /home/pi/rpidatv/src/hello_video
 make
 cp hello_video.bin ../../bin/
+
+# Compile MPEG-2 player
+cd /home/pi/rpidatv/src/hello_video2
+make
+cp hello_video2.bin ../../bin/
 
 # TouchScreen GUI
 # FBCP : Duplicate Framebuffer 0 -> 1

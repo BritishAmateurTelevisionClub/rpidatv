@@ -164,26 +164,34 @@ cp adf4351 ../../bin/
 cd /home/pi
 
 ## Get tstools
-# cd /home/pi/rpidatv/src
-# wget https://github.com/F5OEO/tstools/archive/master.zip
-# unzip master.zip
-# rm -rf tstools
-# mv tstools-master tstools
-# rm master.zip
+cd /home/pi/rpidatv/src
+wget https://github.com/F5OEO/tstools/archive/master.zip
+unzip master.zip
+rm -rf tstools
+mv tstools-master tstools
+rm master.zip
 
 ## Compile tstools
-#cd tstools
-#make
-#cp bin/ts2es ../../bin/
+cd tstools
+make
+cp bin/ts2es ../../bin/
 
-## install H264 Decoder : hello_video
-## compile ilcomponet first
-#cd /opt/vc/src/hello_pi/
-#sudo ./rebuild.sh
+#install H264 Decoder : hello_video
+#compile ilcomponet first
+cd /opt/vc/src/hello_pi/
+sudo ./rebuild.sh
 
-# cd /home/pi/rpidatv/src/hello_video
-# make
-#cp hello_video.bin ../../bin/
+# install H264 player
+cd /home/pi/rpidatv/src/hello_video
+touch video.c
+make
+cp hello_video.bin ../../bin/
+
+# install MPEG-2 player
+cd /home/pi/rpidatv/src/hello_video2
+touch video.c
+make
+cp hello_video2.bin ../../bin/
 
 ## TouchScreen GUI
 ## FBCP : Duplicate Framebuffer 0 -> 1
