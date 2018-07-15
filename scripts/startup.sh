@@ -96,11 +96,17 @@ if [ -f ~/.wifi_off ]; then
     . ~/.wifi_off
 fi
 
-# If framebuffer copy is not already running, start it
-ps -cax | grep 'fbcp' >/dev/null 2>/dev/null
-RESULT="$?"
-if [ "$RESULT" -ne 0 ]; then
-  fbcp &
+
+# Check display type
+DISPLAY=$(get_config_var display $PCONFIGFILE)
+
+# If framebuffer copy is not already running, start it for non-Element 14 displays
+if [ "$DISPLAY" != "Element14_7" ]; then
+  ps -cax | grep 'fbcp' >/dev/null 2>/dev/null
+  RESULT="$?"
+  if [ "$RESULT" -ne 0 ]; then
+    fbcp &
+  fi
 fi
 
 # If a boot session, set up a loop to wait for a valid IP address

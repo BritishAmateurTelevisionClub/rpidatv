@@ -53,6 +53,12 @@ cp -f -r /home/pi/rpidatv/scripts/rtl-fm_presets.txt /home/pi/rtl-fm_presets.txt
 # Make a safe copy of portsdown_locators.txt if required
 cp -f -r /home/pi/rpidatv/scripts/portsdown_locators.txt /home/pi/portsdown_locators.txt
 
+# Make a safe copy of rx_presets.txt if required
+cp -f -r /home/pi/rpidatv/scripts/rx_presets.txt /home/pi/rx_presets.txt
+
+# Make a safe copy of the Stream Presets if required
+cp -f -r /home/pi/rpidatv/scripts/stream_presets.txt /home/pi/stream_presets.txt
+
 # Check if fbi (frame buffer imager) needs to be installed
 if [ ! -f "/usr/bin/fbi" ]; then
   sudo apt-get -y install fbi
@@ -68,6 +74,8 @@ sudo apt-get -y remove apt-listchanges
 sudo dpkg --configure -a
 sudo apt-get clean
 sudo apt-get update
+
+DisplayUpdateMsg "Step 4a of 10\nStill Updating Software Packages\n\nXXXX------"
 
 # Update the distribution (added 20170403)
 sudo apt-get -y dist-upgrade
@@ -192,6 +200,11 @@ cd /home/pi/rpidatv/src/hello_video2
 touch video.c
 make
 cp hello_video2.bin ../../bin/
+
+# Check if omxplayer needs to be installed 201807151
+if [ ! -f "/usr/bin/omxplayer" ]; then
+  sudo apt-get -y install omxplayer
+fi
 
 ## TouchScreen GUI
 ## FBCP : Duplicate Framebuffer 0 -> 1
@@ -398,6 +411,16 @@ if [ -f "/home/pi/portsdown_locators.txt" ]; then
 else
   # Over-write the default locator with the user's locator
   source /home/pi/rpidatv/scripts/copy_locator.sh
+fi
+
+# Restore the user's original rx_presets.txt if required
+if [ -f "/home/pi/rx_presets.txt" ]; then
+  cp -f -r /home/pi/rx_presets.txt /home/pi/rpidatv/scripts/rx_presets.txt
+fi
+
+# Restore the user's original stream presets if required
+if [ -f "/home/pi/stream_presets.txt" ]; then
+  cp -f -r /home/pi/stream_presets.txt /home/pi/rpidatv/scripts/stream_presets.txt
 fi
 
 DisplayUpdateMsg "Step 9 of 10\nInstalling FreqShow SW\n\nXXXXXXXXX-"

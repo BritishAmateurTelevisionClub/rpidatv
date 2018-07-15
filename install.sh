@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Updated by davecrump on 201802040
+# Updated by davecrump on 201807151
 
 # Update the package manager
 sudo dpkg --configure -a
@@ -151,6 +151,9 @@ cmake ..
 make
 sudo install fbcp /usr/local/bin/fbcp
 cd ../../
+
+# Install omxplayer
+sudo apt-get -y install omxplayer
 
 # Install Waveshare 3.5A DTOVERLAY
 cd /home/pi/rpidatv/scripts/
