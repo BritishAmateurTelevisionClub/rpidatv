@@ -377,6 +377,12 @@ if [ ! -d /home/pi/snaps ]; then
   echo "0" > /home/pi/snaps/snap_index.txt
 fi
 
+# Compile and install the executable for the Stream Receiver (201807290)
+cd /home/pi/rpidatv/src/streamrx
+make
+mv streamrx /home/pi/rpidatv/bin/
+cd /home/pi
+
 # Compile the Signal Generator (201710280)
 cd /home/pi/rpidatv/src/siggen
 make clean

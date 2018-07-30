@@ -282,6 +282,8 @@ void ReceiveLOStart();
 int getTouchSample(int *, int *, int *);
 void TransformTouchMap(int, int);
 int ButtonNumber(int, int);
+int CheckLimeInstalled();
+int CheckLimeConnect();
 
 /***************************************************************************//**
  * @brief Looks up the value of a Param in PathConfigFile and sets value
@@ -365,6 +367,28 @@ void SetConfigParam(char *PathConfigFile, char *Param, char *Value)
     fclose(fw);
   }
 }
+
+void DisplayHere(char *DisplayCaption)
+{
+  // Displays a caption on top of the standard logo
+  char ConvertCommand[255];
+
+  system("sudo killall fbi >/dev/null 2>/dev/null");  // kill any previous fbi processes
+  system("rm /home/pi/tmp/captionlogo.png >/dev/null 2>/dev/null");
+  system("rm /home/pi/tmp/streamcaption.png >/dev/null 2>/dev/null");
+
+  strcpy(ConvertCommand, "convert -size 720x80 xc:transparent -fill white -gravity Center -pointsize 40 -annotate 0 \"");
+  strcat(ConvertCommand, DisplayCaption);
+  strcat(ConvertCommand, "\" /home/pi/tmp/captionlogo.png");
+  system(ConvertCommand);
+
+  strcpy(ConvertCommand, "convert /home/pi/rpidatv/scripts/images/BATC_Black.png /home/pi/tmp/captionlogo.png ");
+  strcat(ConvertCommand, "-geometry +0+475 -composite /home/pi/tmp/streamcaption.png");
+  system(ConvertCommand);
+
+  system("sudo fbi -T 1 -noverbose -a /home/pi/tmp/streamcaption.png  >/dev/null 2>/dev/null");  // Add logo image
+}
+
 
 /***************************************************************************//**
  * @brief Looks up the card number for the RPi Audio Card
@@ -681,7 +705,7 @@ void PrepSWUpdate()
   system("rm /home/pi/rpidatv/scripts/latest_version.txt  >/dev/null 2>/dev/null");
 
   // Download new latest version file
-  strcpy(LinuxCommand, "wget --timeout=2 https://raw.githubusercontent.com/BritishAmateurTelevisionClub/");
+  strcpy(LinuxCommand, "wget -4 --timeout=2 https://raw.githubusercontent.com/BritishAmateurTelevisionClub/");
   if (GetLinuxVer() == 8)  // Jessie, so rpidatv repo
   {
     strcat(LinuxCommand, "rpidatv/master/scripts/latest_version.txt ");
@@ -854,6 +878,21 @@ void ExecuteUpdate(int NoButton)
     system("/home/pi/rpidatv/scripts/install_lime.sh");
     init(&wscreen, &hscreen);
     Start(wscreen, hscreen);
+    wait_touch();
+    break;
+  case 1:  // Upgrade Lime Firmware
+    if (CheckLimeConnect() == 0)
+    {
+      MsgBox4("Upgrading Lime Firmware", " ", " ", " ");
+      system("LimeUtil --update");
+      MsgBox4("Firmware Upgrade Complete", " ", "Touch Screen to Continue" ," ");
+      wait_touch();
+    }
+    else
+    {
+      MsgBox4("No Lime Mini Connected", " ", "Touch Screen to Continue" ," ");
+      wait_touch();
+    }
     break;
   default:
     break;
@@ -1402,7 +1441,7 @@ void ReadModeOutput(char Moutput[256])
   else if (strcmp(ModeOutput, "LIMEMINI") == 0) 
   {
     strcpy(Moutput, "LimeSDR Mini");
-    strcpy(CurrentModeOPtext, TabModeOPtext[4]);
+    strcpy(CurrentModeOPtext, TabModeOPtext[8]);
   } 
   else if (strcmp(ModeOutput, "STREAMER") == 0) 
   {
@@ -5823,6 +5862,13 @@ void TransmitStop()
     system("sudo killall netcat >/dev/null 2>/dev/null");
   }
 
+  // Stop Lime transmitting
+  if((strcmp(ModeOutput, "LIMEMINI")==0) || (strcmp(ModeOutput, "LIMEUSB")==0))
+  {
+    system("sudo killall dvb2iq >/dev/null 2>/dev/null");
+    system("sudo killall limetx >/dev/null 2>/dev/null");
+  }
+
   // Kill the key processes as nicely as possible
   system("sudo killall rpidatv >/dev/null 2>/dev/null");
   system("sudo killall ffmpeg >/dev/null 2>/dev/null");
@@ -5909,6 +5955,53 @@ void *WaitButtonEvent(void * arg)
   return NULL;
 }
 
+int CheckStream()
+{
+  // first check file exists, if not, return 1
+  // then read first 5 characters of file
+  // if Video, return 0
+  // if Audio, return 2.
+  // else return 3
+
+  FILE *fp;
+  char response[127] = "";
+
+  fp = popen("cat /home/pi/tmp/stream_status.txt 2>/dev/null", "r");
+  if (fp == NULL)
+  {
+    //printf("Failed to run command\n" );
+    return 1;
+  }
+
+  // Read the output a line at a time
+  while (fgets(response, 127, fp) != NULL)
+  {
+    //printf("Response was %s", response);
+  }
+  pclose(fp);
+
+  if (strlen(response) < 5)  // Null string or single <CR>
+  {
+    return 1;
+  }
+ 
+  response[5] = '\0'; // Truncate response to 5 characters
+
+  if (strcmp(response, "Video") == 0)
+  {
+    return 0;
+  }
+  else if (strcmp(response, "Audio") == 0)
+  {
+    return 2;
+  }
+  else
+  {
+    return 3;
+  }
+}
+
+/*   Old Code!!
 void DisplayStream(int NoButton)
 {
   char OMXCommand[127];
@@ -5945,6 +6038,110 @@ void DisplayStream(int NoButton)
     usleep(1000);
   }
   system("sudo killall omxplayer.bin"); 
+  pthread_join(thbutton, NULL);
+}
+*/
+
+void DisplayStream(int NoButton)
+{
+  int NoPreset;
+  int StreamStatus;
+  int count;
+  char startCommand[255];
+  char WaitMessage[63];
+
+  if(NoButton < 5) // bottom row
+  {
+    NoPreset = NoButton + 5;
+  }
+  else  // top row
+  {
+    NoPreset = NoButton - 4;
+  }
+
+  strcpy(startCommand, "/home/pi/rpidatv/scripts/omx.sh ");
+  strcat(startCommand, StreamAddress[NoPreset]);
+  strcat(startCommand, " &");
+
+  strcpy(WaitMessage, "Waiting for Stream ");
+  strcat(WaitMessage, StreamLabel[NoPreset]);
+
+  printf("Starting Stream receiver ....\n");
+  FinishedButton = 0;
+  BackgroundRGB(0, 0, 0, 0);
+  End();
+  DisplayHere(WaitMessage);
+
+  // Create Wait Button thread
+  pthread_create (&thbutton, NULL, &WaitButtonEvent, NULL);
+
+  while (FinishedButton == 0)
+  {
+    // With no stream, this loop is executed about once every 10 seconds
+
+    // first make sure that the stream status is not stale
+    system("rm /home/pi/tmp/stream_status.txt >/dev/null 2>/dev/null");
+    usleep(500000);
+
+    // run the omxplayer script
+ 
+    system(startCommand);
+
+    StreamStatus = CheckStream();
+
+    // = 0 Stream running
+    // = 1 Not started yet
+    // = 2 started but audio only
+    // = 3 terminated
+    
+    // Now wait 10 seconds for omxplayer to respond
+    // checking every 0.5 seconds.  It will time out at 5 seconds
+
+    count = 0;
+    while ((StreamStatus == 1) && (count < 20) && (FinishedButton == 0))
+    {
+      usleep(500000); 
+      count = count + 1;
+      StreamStatus = CheckStream();
+    }
+
+    // If it is running properly, wait here
+    if (StreamStatus == 0)
+    {
+      DisplayHere("Valid Stream Detected");
+
+      while (StreamStatus == 0 && (FinishedButton == 0))
+      {
+        // Wait in this loop while the stream is running
+        usleep(500000); // Check every 0.5 seconds
+        StreamStatus = CheckStream();
+      }
+
+      if (FinishedButton == 0)
+      {
+        DisplayHere("Stream Dropped Out");
+        usleep(500000); // Display dropout message for 0.5 sec
+      }
+      else
+      {
+        DisplayHere(""); // Clear messages
+      }
+    }     
+
+    if (StreamStatus == 2)  // Audio only
+    {
+      DisplayHere("Audio Stream Detected, Trying for Video");
+    }
+
+    if ((StreamStatus == 3) || (StreamStatus == 1))  // Nothing detected
+    {
+      DisplayHere(WaitMessage);
+    }
+
+    // Make sure that omxplayer is no longer running
+    system("killall -9 omxplayer.bin >/dev/null 2>/dev/null");
+  }
+  DisplayHere("");
   pthread_join(thbutton, NULL);
 }
 
@@ -8417,6 +8614,10 @@ void waituntil(int w,int h)
           {
             if (!((IQAvailable == 0) && ((strcmp(CurrentModeOP, "QPSKRF") == 0) || (strcmp(CurrentModeOP, "IQ") == 0))))
             {
+              if ((strcmp(CurrentModeOP, "LIMEMINI") == 0) || (strcmp(CurrentModeOP, "LIMEUSB") == 0))
+              {  
+                system("/home/pi/rpidatv/scripts/lime_ptt.sh &");
+              }
               SelectPTT(i,1);
               UpdateWindow();
               TransmitStart();
@@ -10083,7 +10284,7 @@ void waituntil(int w,int h)
         BackgroundRGB(0, 0, 0, 255);
         Start_Highlights_Menu3();
         UpdateWindow();
-        continue;   // Completed Menu 33 action, go and wait for touch
+        continue;   // Completed Menu 31 action, go and wait for touch
       }
 
  
@@ -10141,15 +10342,16 @@ void waituntil(int w,int h)
           Start_Highlights_Menu1();
           UpdateWindow();
           break;
-        case 1:
+        case 3:                                 // Add MPEG-2 Licence
           MPEG2License();
           CurrentMenu=1;
           BackgroundRGB(255,255,255,255);
           Start_Highlights_Menu1();
           UpdateWindow();
           break;
-        case 0:
-        case 5:
+        case 0:                                 // Install/update Lime drivers
+        case 1:                                 // Update Lime Firmware
+        case 5:                                 // All defined in ExecuteUpdate(i)
         case 6:
         case 7:
           printf("Checking for Update\n");
@@ -13368,14 +13570,18 @@ void Define_Menu33()
 
   // Bottom Row, Menu 33
 
-  if ((CheckLimeInstalled() == 1) && (GetLinuxVer() == 9))
+  if (GetLinuxVer() == 9)
   {
     button = CreateButton(33, 0);
     AddButtonStatus(button, "Install^Lime Mini", &Blue);
     AddButtonStatus(button, "Install^Lime Mini", &Green);
+
+    button = CreateButton(33, 1);
+    AddButtonStatus(button, "Update^Lime FW", &Blue);
+    AddButtonStatus(button, "Update^Lime FW", &Green);
   }
 
-  button = CreateButton(33, 1);
+  button = CreateButton(33, 3);
   AddButtonStatus(button, "MPEG-2^License", &Blue);
   AddButtonStatus(button, "MPEG-2^License", &Green);
 
@@ -13405,13 +13611,16 @@ void Start_Highlights_Menu33()
   color_t Red;
   color_t Blue;
   color_t Grey;
+  color_t Green;
   Blue.r=0; Blue.g=0; Blue.b=128;
   Red.r=128; Red.g=0; Red.b=0;
   Grey.r=127; Grey.g=127; Grey.b=127;
+  Green.r=0; Green.g=128; Green.b=0;
 
   if ((ButtonArray[ButtonNumber(CurrentMenu, 0)].IndexStatus > 0) && (CheckLimeInstalled() == 0))  // Lime was not installed, but now is
   {
-    AmendButtonStatus(ButtonNumber(33, 0), 0, "Lime Mini^Installed", &Grey);
+    AmendButtonStatus(ButtonNumber(33, 0), 0, "Update^Lime Drvr", &Blue);
+    AmendButtonStatus(ButtonNumber(33, 0), 1, "Update^Lime Drvr", &Green);
   }
 
   if (strcmp(UpdateStatus, "NotAvailable") == 0)
@@ -13708,7 +13917,9 @@ terminate(int dummy)
   TransmitStop();
   ReceiveStop();
   RTLstop();
+  system("killall -9 omxplayer.bin >/dev/null 2>/dev/null");
   finish();
+  DisplayHere("Touchscreen Process Stopped");
   printf("Terminate\n");
   sprintf(Commnd,"sudo killall express_server >/dev/null 2>/dev/null");
   system(Commnd);
