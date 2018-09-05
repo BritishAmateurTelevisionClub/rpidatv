@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Updated by davecrump 201805151
+# Updated by davecrump 201809051
 
 DisplayUpdateMsg() {
 # Delete any old update message image  201802040
@@ -78,8 +78,11 @@ sudo apt-get update
 DisplayUpdateMsg "Step 4a of 10\nStill Updating Software Packages\n\nXXXX------"
 
 # Update the distribution (added 20170403)
-sudo apt-get -y dist-upgrade
-sudo apt-get update
+
+# --------- Do not update packages until mmal and IL firmware issues are fixed ------
+
+#sudo apt-get -y dist-upgrade  
+
 
 # Check that ImageMagick is installed (201704050)
 sudo apt-get -y install imagemagick

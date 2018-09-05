@@ -1,3 +1,6 @@
+201809051
+Enable code changes for Stretch to be carried across to Jessie
+
 201807291
 Introduce Stream to Video appliance with "Stream Valid" signal
 Major Improvements to touchscreen stream display

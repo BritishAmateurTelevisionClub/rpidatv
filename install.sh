@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Updated by davecrump on 201807151
+# Updated by davecrump on 201809051
 
 # Update the package manager
 sudo dpkg --configure -a
@@ -11,9 +11,10 @@ sudo apt-get update
 # http://unix.stackexchange.com/questions/124468/how-do-i-resolve-an-apparent-hanging-update-process
 sudo apt-get -y remove apt-listchanges
 
+# -------- Do not upgrade distribution until firmware IL and mmal issues are fixed ------
+
 # Update the distribution
-sudo apt-get -y dist-upgrade
-sudo apt-get update
+#sudo apt-get -y dist-upgrade
 
 # Install the packages that we need
 sudo apt-get -y install apt-transport-https git rpi-update
