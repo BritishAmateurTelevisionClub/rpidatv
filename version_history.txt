@@ -1,3 +1,9 @@
+201809151
+Define and store rtl-sdr gain
+Fix rtl-sdr frequency setting bug
+Fix factory reset bug
+Enable stream set-up and selection from Menu 3
+
 201809051
 Enable code changes for Stretch to be carried across to Jessie
 

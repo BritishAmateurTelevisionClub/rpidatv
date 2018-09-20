@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Updated by davecrump on 201809051
+# Updated by davecrump on 201809151
 
 # Update the package manager
 sudo dpkg --configure -a
