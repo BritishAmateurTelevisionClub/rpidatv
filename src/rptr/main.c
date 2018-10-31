@@ -11,6 +11,9 @@ int8_t KeyGPIO;
 char sdnCommand[32];
 char startCommand[64];
 char stopCommand1[64];
+char stopCommand2[64];
+char rebootCommand1[64];
+char rebootCommand2[64];
 _timer_t key_timer;
 time_t rawtime;
 struct tm * timeinfo;
@@ -106,6 +109,9 @@ int main( int argc, char *argv[] )
   snprintf(sdnCommand,32,"shutdown -h now");
   snprintf(startCommand,64,"sudo /home/pi/rpidatv/scripts/a.sh >/dev/null 2>/dev/null");
   snprintf(stopCommand1,64,"sudo killall ffmpeg >/dev/null 2>/dev/null");
+  snprintf(stopCommand2, 64 ,"sudo killall a.sh >/dev/null 2>/dev/null");
+  snprintf(rebootCommand1, 64, "sudo swapoff -a");
+  snprintf(rebootCommand2, 64, "sudo reboot now");
     
   if(KeyGPIO > 0)
   {
@@ -144,6 +150,9 @@ int main( int argc, char *argv[] )
     Start_Function();
   }
 
+  // fbcp not required, so kill it
+  system("killall fbcp");
+
   /* Now wait here for interrupts - forever! */
   /* But stop/start the stream at 0300Z and 1500Z each day */
     
@@ -157,11 +166,20 @@ int main( int argc, char *argv[] )
     delay(10000);
     time ( &rawtime );
     timeinfo = gmtime ( &rawtime );
-    strftime (hour, 8, "%I", timeinfo);
+    strftime (hour, 8, "%H", timeinfo);
 
     if (strcmp(previous_hour, "02") == 0 && strcmp(hour, "03") == 0)
     {
-      /* 3am or 3 pm, so stop and restart stream to zero delays */
+      /* 3am, so stop stream and reboot */
+      Stop_Function();
+      delay(10000);
+      system(rebootCommand1);
+      system(rebootCommand2);
+    }
+
+    if (strcmp(previous_hour, "14") == 0 && strcmp(hour, "15") == 0)
+    {
+      /* 3 pm, so stop and restart stream to zero delays */
       if (strcmp(stream_state, "on") == 0)
       {
         Stop_Function();
