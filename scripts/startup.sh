@@ -243,6 +243,7 @@ case "$MODE_STARTUP" in
   Keyed_Stream_boot)
     # Start the Switched stream with the default GPIO Pins
     if [ "$SESSION_TYPE" == "boot" ]; then
+      (/home/pi/rpidatv/scripts/streamer_process_watchdog.sh >/dev/null 2>/dev/null) &
       /home/pi/rpidatv/bin/keyedstream 1 7
     fi
     return
@@ -250,6 +251,7 @@ case "$MODE_STARTUP" in
   Cont_Stream_boot)
     # Start a continuous stream
     if [ "$SESSION_TYPE" == "boot" ]; then
+      (/home/pi/rpidatv/scripts/streamer_process_watchdog.sh >/dev/null 2>/dev/null) &
       /home/pi/rpidatv/bin/keyedstream 0
     fi
     return
